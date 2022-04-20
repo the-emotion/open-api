@@ -1,0 +1,409 @@
+openapi: 3.1.0
+info:
+  title: Auth
+  version: '1.0'
+  contact:
+    name: Mikhail Seregin
+    url: 'https://t.me/uraganschik'
+    email: _silo@mail.ru
+  termsOfService: 'http://the-emotion.ru/privacy-policy/'
+  description: API сервисов the emotion
+servers:
+  - url: 'http://localhost:3000'
+paths:
+  /api/v1/auth/signup:
+    parameters: []
+    post:
+      summary: Регистрация пользователя
+      operationId: post-api-v1-auth-signup
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignupResponse'
+        '409':
+          description: Email conflict
+      description: Запрос на регистрацию нового пользователя
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+        description: ''
+      tags:
+        - signup
+  /api/v1/auth/signin:
+    post:
+      summary: Вход в приложение
+      operationId: post-api-v1-auth-signin
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SigninResponse'
+        '404':
+          description: User Not Found
+        '409':
+          description: Wrong password
+      description: Запрос на вход пользователя в приложение
+      tags:
+        - signin
+      security:
+        - Authorization: []
+  /api/v1/auth/email/validate:
+    post:
+      summary: ''
+      operationId: post-api-v1-auth-email-validate
+      responses:
+        '200':
+          description: OK
+      description: 'Запрос на повторную отправку письма для валидации email. Запрос закрыт авторизацией. При выполнении запроса проверяется, что это за пользователь, какой у него email и потом отправляется письмо для проверки email. Письмо содержит в себе deepLink/universalLink для  открытия сайта/приложения. Формат ссылки https://the-emotion.ru/auth/email/validate?token=token. token генерируется в таблице БД или кеше со ссылкой на конкретный email который требуется подтвердить.'
+      parameters: []
+      tags:
+        - email
+      security:
+        - AuthorizationBearer: []
+    get:
+      summary: Валидация Email
+      operationId: get-api-v1-auth-email-validate
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Email Not Found or not validated
+      description: |-
+        Запрос для перехода из почты на страницу/экран подтверждения почты. Возможен deepLink/universalLink. на первое время предлагаю остановиться на deepLink.
+        При выполнении запроса по ссылке проверяется токен почты, если совпадает, то установить почту проверенной. Токен удалить.
+
+        В случае, если токен не найден вернуть 404 ошибку
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: token
+          description: одноразовый токен для проверки почты.
+      tags:
+        - email
+  /api/v1/application/init:
+    get:
+      summary: Инициализация приложения
+      tags:
+        - application
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  description:
+                    type: string
+                    description: |-
+                      Текст для отображения на фронте. 
+                      Можно в формате markdown
+                      например, ваше приложение устарело - (обновите)[ссылка для обновления]. или например, попробуйте использовать новый инструмент (название инструмента)[deep link на инструмент]
+        '401':
+          description: Unauthorized
+      operationId: get-api-v1-application
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: version
+          description: версия приложения
+          required: true
+        - schema:
+            type: string
+          in: query
+          name: deviceModel
+          description: Модель устройства
+        - schema:
+            type: string
+          in: query
+          name: os
+          description: Тип операционной системы ios/android/web
+          required: true
+        - schema:
+            type: string
+          in: query
+          name: osVersion
+          description: Версия операционной системы
+        - schema:
+            type: string
+          in: query
+          name: deviceId
+          description: Идентификатор устройства
+          required: true
+      description: |-
+        Запрос для проверки версии приложения. при проверке должен учитываться параметр минимально допусимой версии приложения, например если минимальная версия 2.0, а в запросе приходит 1.9, то в ответ должна прилететь ссылка на обновление приложения. также можно туда добавлять что нового в приложении, предложения использовать новый инструмент и так далее.
+
+        Опционально:
+        В рамках токена может быть только одно устройство
+        Сервис вызывается после входа в приложение, например, пользователь зарегистрировался а потом произошел вызов сервиса init, Пользователь вошел запускается init
+        при вызове сервиса, если у пользователя нету ни одного deviceId, то создается новое устройство в списке устройств и туда записывается вся информация об устройстве из параметров запроса, если у пользователя уже записана информация о каком то устройстве, то сверяется diviceId, в случае несовпадения в ответ направляется ошибка, что необходимо повторно войти.
+      security:
+        - AuthorizationBearer: []
+    parameters: []
+  /api/v1/events:
+    get:
+      summary: Список событий
+      tags:
+        - events
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    $ref: '#/components/schemas/EventsResponse'
+                  offset:
+                    type: integer
+                    description: текущий отстур от начала списка. передается переданный в запросе limit
+                  total:
+                    type: integer
+                    description: Всего найденных записей
+              examples:
+                example-1:
+                  value:
+                    events:
+                      id: 0e4b0339-102c-4436-ab0e-651db60f2256
+                      comment: string
+                      think: string
+                      feel: string
+                      due: string
+                      sense: string
+                      want: string
+                      date: '2005-08-09T18:31:42-03'
+                      tags:
+                        - string
+                      emotions:
+                        - id: 0e4b0339-102c-4436-ab0e-651db60f2256
+                          title: sadnes
+                          type: positive
+                    offset: 30
+                    total: 1000
+      operationId: get-api-v1-events
+      description: |-
+        Запрос на получение списка событий
+        Смотрим на publicType (массив) если в массиве есть public возвращаем все записи, которые имеют признак public, если в массиве есть private, возвращаем свои приватные события, если есть и public и private возвращаем общим списком и свои и все пуличные.
+      security:
+        - AuthorizationBearer: []
+      parameters:
+        - schema:
+            type: integer
+          in: query
+          name: limit
+          description: Количество событий в ответе
+        - schema:
+            type: integer
+          in: query
+          name: offset
+          description: 'маркер отступа, например 30, тогда выводятся с 31 по 31 + limit'
+        - schema:
+            type: array
+          in: query
+          name: publicType
+          description: 'public, private '
+    post:
+      summary: Создание события
+      operationId: post-api-v1-events
+      responses:
+        '200':
+          description: OK
+      description: Запрос на создание события
+      security:
+        - AuthorizationBearer: []
+      tags:
+        - events
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+            examples: {}
+components:
+  schemas:
+    User:
+      title: User
+      type: object
+      description: ''
+      examples:
+        - id: 142
+          firstName: Alice
+          lastName: Smith
+          email: alice.smith@gmail.com
+          dateOfBirth: '1997-10-31'
+          emailVerified: true
+          signUpDate: '2019-08-24'
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the given user.
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        dateOfBirth:
+          type: string
+          format: date
+          example: '1997-10-31'
+        emailVerified:
+          type: boolean
+          description: Set to true if the user's email has been verified.
+        createDate:
+          type: string
+          format: date
+          description: The date that the user was created.
+      required:
+        - id
+        - email
+        - emailVerified
+    SignupRequest:
+      title: SignupRequest
+      type: object
+      description: Модель запроса на регистрацию нового пользователя.
+      properties:
+        email:
+          type: string
+          description: 'Проверку на то, что переданное поле это email делаем, как на фронте так и на бэке. Также нужно прикрутить email валидатор, который будет отправлять письмо для подтверждения email адреса пользователя.'
+        password:
+          type: string
+          description: Пароль передаем в формате hash от введенного пароля. В БД должен записываться hash от переданного hash.
+      required:
+        - email
+        - password
+    SignupResponse:
+      title: SignupResponse
+      type: object
+      description: Модель ответа на запром регистрации
+      properties:
+        token:
+          type: string
+          description: |-
+            Авторизационный токен в формате JWT/JWE, по которому в дальнейшем будет осуществляться авторизация пользователя. Токен в себе содержит 
+            id пользователя, 
+            expireDate срок действия токена, по умолчанию - срок действия 1 год.
+      required:
+        - token
+    SigninResponse:
+      title: SigninResponse
+      type: object
+      description: Модель ответа на логин пользователя
+      properties:
+        token:
+          type: string
+      required:
+        - token
+    EventsResponse:
+      title: EventsResponse
+      type: object
+      description: Ответ на запрос списка событий
+      properties:
+        id:
+          type: string
+        comment:
+          type: string
+        think:
+          type: string
+        feel:
+          type: string
+        due:
+          type: string
+        sense:
+          type: string
+        want:
+          type: string
+        date:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        emotions:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmotionResponse'
+      required:
+        - id
+        - date
+      examples:
+        - id: 0e4b0339-102c-4436-ab0e-651db60f2256
+          comment: string
+          think: string
+          feel: string
+          due: string
+          sense: string
+          want: string
+          date: '2005-08-09T18:31:42-03'
+          tags:
+            - string
+          emotions:
+            - id: 0e4b0339-102c-4436-ab0e-651db60f2256
+              title: sadnes
+              type: positive
+    EmotionResponse:
+      title: EmotionResponse
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+      required:
+        - id
+        - title
+        - type
+    CreateEventRequest:
+      title: CreateEventRequest
+      type: object
+      properties:
+        comment:
+          type: string
+        think:
+          type: string
+        feel:
+          type: string
+        due:
+          type: string
+        sense:
+          type: string
+        want:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        emotions:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmotionResponse'
+  securitySchemes:
+    Authorization:
+      type: http
+      scheme: basic
+    AuthorizationBearer:
+      type: http
+      scheme: bearer
+  requestBodies: {}
+  responses: {}
+tags:
+  - name: application
+  - name: email
+  - name: events
+  - name: signin
+  - name: signup
