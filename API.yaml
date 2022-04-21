@@ -231,6 +231,42 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateEventRequest'
             examples: {}
+    put:
+      summary: Замена события целиком
+      operationId: put-api-v1-events
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      tags:
+        - events
+      description: При выполнении запроса событие изменяется целиком.
+      security:
+        - AuthorizationBearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+    patch:
+      summary: Изменение события
+      operationId: patch-api-v1-events
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+      description: Частичное изменение события. При выполнении изменяются только переданные данные.
+      security:
+        - AuthorizationBearer: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      tags:
+        - events
 components:
   schemas:
     User:
