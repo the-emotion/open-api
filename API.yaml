@@ -34,6 +34,24 @@ paths:
         description: ''
       tags:
         - signup
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: os
+          description: Тип операционной системы ios/android/web
+          required: true
+        - schema:
+            type: string
+          in: query
+          name: osVersion
+          description: Версия операционной системы
+        - schema:
+            type: string
+          in: query
+          name: deviceId
+          description: Идентификатор устройства
+          required: true
   /api/v1/auth/signin:
     post:
       summary: Вход в приложение
@@ -54,6 +72,24 @@ paths:
         - signin
       security:
         - Authorization: []
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: os
+          description: Тип операционной системы ios/android/web
+          required: true
+        - schema:
+            type: string
+          in: query
+          name: osVersion
+          description: Версия операционной системы
+        - schema:
+            type: string
+          in: query
+          name: deviceId
+          description: Идентификатор устройства
+          required: true
   /api/v1/auth/email/validate:
     post:
       summary: ''
@@ -118,28 +154,6 @@ paths:
           in: query
           name: version
           description: версия приложения
-          required: true
-        - schema:
-            type: string
-          in: query
-          name: deviceModel
-          description: Модель устройства
-        - schema:
-            type: string
-          in: query
-          name: os
-          description: Тип операционной системы ios/android/web
-          required: true
-        - schema:
-            type: string
-          in: query
-          name: osVersion
-          description: Версия операционной системы
-        - schema:
-            type: string
-          in: query
-          name: deviceId
-          description: Идентификатор устройства
           required: true
       description: |-
         Запрос для проверки версии приложения. при проверке должен учитываться параметр минимально допусимой версии приложения, например если минимальная версия 2.0, а в запросе приходит 1.9, то в ответ должна прилететь ссылка на обновление приложения. также можно туда добавлять что нового в приложении, предложения использовать новый инструмент и так далее.
@@ -409,16 +423,6 @@ components:
       type: object
       properties:
         comment:
-          type: string
-        think:
-          type: string
-        feel:
-          type: string
-        due:
-          type: string
-        sense:
-          type: string
-        want:
           type: string
         tags:
           type: array
